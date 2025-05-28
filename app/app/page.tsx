@@ -1,10 +1,10 @@
-'use client';
+"use client";
+
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-
 
 interface Todo {
   id: number;
@@ -17,11 +17,11 @@ export default function AppPage() {
   const router = useRouter();
 
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [input, setInput] = useState('');
-
+  const [input, setInput] = useState("");
 
   // Load todos from supabase
   useEffect(() => {
+        
     const fetchTodos = async () => {
       if (!session?.user?.email) return
   
@@ -98,7 +98,7 @@ const toggleTodo = async (id: number, current: boolean) => {
   // Redirect unauthenticated users to the homepage
   useEffect(() => {
     if (session === null) {
-      router.push('/');
+      router.push("/");
     }
   }, [session, router]);
 
@@ -111,13 +111,11 @@ const toggleTodo = async (id: number, current: boolean) => {
     );
   }
 
-  if (!session) return null
-
-
+  if (!session) return null;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start p-6">
-      <h1 className="text-3xl font-bold mb-6">Todo App</h1>
+      <h1 className="text-3xl font-bold mb-6">Todooo</h1>
       <p className="mb-4">Welcome, {session.user?.name}</p>
 
       <button
@@ -130,7 +128,7 @@ const toggleTodo = async (id: number, current: boolean) => {
       <div className="w-full max-w-md flex gap-2 mb-4">
         <input
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           className="flex-grow border p-2 rounded"
           placeholder="Add a new todo"
         />
@@ -143,14 +141,14 @@ const toggleTodo = async (id: number, current: boolean) => {
       </div>
 
       <ul className="w-full max-w-md">
-        {todos.map(todo => (
+        {todos.map((todo) => (
           <li
             key={todo.id}
             className="flex justify-between items-center bg-white p-3 mb-2 rounded shadow"
           >
             <span
               className={`flex-1 cursor-pointer ${
-                todo.completed ? 'line-through text-gray-400' : ''
+                todo.completed ? "line-through text-gray-400" : ""
               }`}
               onClick={() => toggleTodo(todo.id, todo.completed)}
             >
