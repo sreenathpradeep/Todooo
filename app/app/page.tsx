@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+
+import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface Todo {
   id: number;
@@ -17,43 +19,81 @@ export default function AppPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [input, setInput] = useState("");
 
-  // Load todos from localStorage
+  // Load todos from supabase
   useEffect(() => {
-    const stored = localStorage.getItem("todos");
-    if (stored) {
-      setTodos(JSON.parse(stored));
+        
+    const fetchTodos = async () => {
+      if (!session?.user?.email) return
+  
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', session.user.email)
+        .order('inserted_at', { ascending: false })
+  
+      if (error) {
+        console.error('Failed to fetch todos:', error.message)
+      } else {
+        setTodos(data)
+      }
     }
-  }, []);
+  
+    fetchTodos()
+  }, [session])
+  
+// add todo to supabase
 
-  // Save todos to localStorage on any change
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
-
-  const addTodo = () => {
-    if (!input.trim()) return;
-
-    const newTodo: Todo = {
-      id: Date.now(),
-      text: input.trim(),
-      completed: false,
-    };
-
-    setTodos([newTodo, ...todos]);
-    setInput("");
+const addTodo = async () => {
+    if (!input.trim() || !session?.user?.email) return;
+  
+    const { data, error } = await supabase.from('todos').insert([
+      {
+        text: input.trim(),
+        completed: false,
+        user_id: session.user.email,
+      },
+    ]).select(); // this gives us the created row back
+  
+    if (error) {
+      console.error('Failed to add todo:', error.message);
+    } else if (data) {
+      setTodos([data[0], ...todos]);
+      setInput('');
+    }
   };
+  
+// Toggle todo completion status
 
-  const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+const toggleTodo = async (id: number, current: boolean) => {
+    const { error } = await supabase
+      .from('todos')
+      .update({ completed: !current })
+      .eq('id', id)
+  
+    if (error) {
+      console.error('Failed to toggle todo:', error.message)
+    } else {
+      setTodos(
+        todos.map((todo) =>
+          todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        )
       )
-    );
-  };
+    }
+  }  
 
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
+  // Delete todo from supabase
+  const deleteTodo = async (id: number) => {
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', id)
+  
+    if (error) {
+      console.error('Failed to delete todo:', error.message)
+    } else {
+      setTodos(todos.filter((todo) => todo.id !== id))
+    }
+  }
 
   // Redirect unauthenticated users to the homepage
   useEffect(() => {
@@ -110,7 +150,7 @@ export default function AppPage() {
               className={`flex-1 cursor-pointer ${
                 todo.completed ? "line-through text-gray-400" : ""
               }`}
-              onClick={() => toggleTodo(todo.id)}
+              onClick={() => toggleTodo(todo.id, todo.completed)}
             >
               {todo.text}
             </span>
